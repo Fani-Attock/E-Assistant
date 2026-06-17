@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.env
+delivery/
+react UI/node_modules/
+react UI/dist/
+checkpoints/
+*.log

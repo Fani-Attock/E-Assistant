@@ -1,0 +1,4 @@
+{
+  "matcher": "artifacts/matching_model",
+  "cf": "artifacts/cf_model"
+}

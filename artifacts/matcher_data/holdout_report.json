@@ -1,0 +1,46 @@
+{
+  "model": "artifacts/matching_model",
+  "threshold_used": 0.65,
+  "train_count": 290,
+  "val_count": 72,
+  "val_cross_source_count": 72,
+  "val_same_source_count": 0,
+  "train_metrics": {
+    "count": 290,
+    "threshold": 0.65,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "val_metrics": {
+    "count": 72,
+    "threshold": 0.65,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "val_cross_source_metrics": {
+    "count": 72,
+    "threshold": 0.65,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "val_same_source_metrics": {
+    "count": 0
+  },
+  "generalization_gap_f1": 0.0,
+  "generalization_gap_accuracy": 0.0,
+  "best_val_threshold_by_f1": 0.45,
+  "best_val_metrics": {
+    "count": 72,
+    "threshold": 0.45,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "consecutive_failures": {
+    "playwright_sync.py": 0,
+    "playwright_async.py": 1,
+    "src/scrapers/daraz/playwright_async.py": 0,
+    "src/scrapers/ishopping/playwright_sync.py": 0,
+    "src/scrapers/shophive/playwright_async.py": 0
+  }
+}

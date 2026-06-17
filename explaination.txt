@@ -1,0 +1,705 @@
+PROJECT EXPLAINATION
+====================
+
+Scope
+-----
+This file explains the maintained project files and folders that matter for development, delivery, and operations.
+Generated/cache content such as `react UI/node_modules`, `react UI/dist`, `__pycache__`, compiled model files, and delivery ZIPs is intentionally not documented line by line.
+
+
+QUICK COMMANDS TO SCRAPE DATA AND POPULATE DATABASE
+---------------------------------------------------
+
+1. Create env file:
+   Copy-Item .env.example .env
+
+2. Set Python path from project root:
+   $env:PYTHONPATH = (Get-Location).Path
+
+3. Initialize Mongo indexes and collections:
+   python jobs\init_db.py
+
+4. Run one scrape cycle:
+   python jobs\run_scrapper.py --once
+
+5. Process scraped data into normalized/searchable collections:
+   python jobs\run_data_processing.py --with-init-db
+
+6. Start backend + frontend:
+   python run_all.py
+
+7. Optional full training refresh:
+   python jobs\run_training.py
+
+8. Optional all-in-one pipeline:
+   python jobs\run_pipeline.py
+
+
+ROOT FILES
+----------
+
+.dockerignore
+Tells Docker which local files and folders should not be copied into image builds.
+This keeps images smaller and avoids shipping caches or local-only files.
+
+.env
+Local runtime configuration file for your machine: Mongo URI, API keys, auth settings, and feature toggles.
+This file is secret-bearing and should not be shared directly with a client.
+
+.env.docker.example
+Sample environment file intended for Docker deployments.
+It contains placeholders and production-safe switches so a client can fill values without using your real `.env`.
+
+.env.example
+Generic local configuration template for a fresh setup.
+Use this as the starting point when someone new needs to run the project locally.
+
+.gitignore
+Defines which local, generated, and secret files should not be committed or shipped.
+It excludes `.env`, caches, build folders, and delivery output.
+
+CLIENT_DELIVERY.md
+Client handoff instructions explaining what package to send, what is excluded, and how the client should run it.
+This is the short operational note for delivery rather than developer implementation detail.
+
+docker-compose.yml
+Defines the Docker stack for `web`, `api`, and `mongo`.
+This is the main entry point for client-side Docker deployment.
+
+Dockerfile.api
+Build recipe for the FastAPI backend container.
+It installs Python dependencies and packages the backend runtime for Docker.
+
+gradio_app.py
+Root launcher for the Gradio testing interface.
+It provides a simpler alternate UI path outside the React frontend.
+
+groq_tools.md
+Notes/documentation around Groq-backed tool usage and assistant behavior.
+Useful as reference for LLM/tool-call integration decisions.
+
+PLAN.md
+Main implementation roadmap and progress tracker for the project.
+It documents the assistant reasoning upgrade and other engineering milestones.
+
+README.md
+Primary setup and usage guide for developers and clients.
+It explains run commands, Docker usage, auth, smoke tests, and delivery flow.
+
+requirements.txt
+Python dependency list for backend, scrapers, training, and API runtime.
+This is the package manifest used by local installs and Docker builds.
+
+run_all.py
+Local convenience runner that starts the FastAPI backend and Vite frontend together.
+It also wires local frontend env like `VITE_SERVICE_API_KEY` from `.env`.
+
+run_containers.ps1
+PowerShell helper for Docker-based startup.
+It is mainly a convenience wrapper around `docker compose`.
+
+explaination.txt
+This file: a project map for delivery and onboarding.
+It explains what each maintained file does and gives the core operational commands.
+
+
+CONFIG FILES
+------------
+
+config\categories_daraz.yaml
+Category list/config used by the Daraz scraper.
+Controls which site sections are scraped.
+
+config\categories_ishopping.yaml
+Category list/config for iShopping scraping.
+Defines the iShopping sections and paths the scraper should walk.
+
+config\categories_shophive.yaml
+Category list/config for Shophive scraping.
+This is the source of category scope for that scraper.
+
+config\sources.yaml
+Master source enable/disable and collection wiring file for ingestion.
+The processing jobs use this to know which scraped sources to load into unified collections.
+
+
+SRC PACKAGE
+-----------
+
+src\__init__.py
+Marks `src` as a Python package.
+It contains no logic and exists for package import structure.
+
+
+SRC\AGENT
+---------
+
+src\agent\__init__.py
+Package marker for the assistant layer.
+Used only to make `src.agent` importable.
+
+src\agent\assistant.py
+Main conversational assistant orchestration file.
+It contains routing, plan validation, product reference resolution, follow-up handling, compare/refine flows, LLM tool loop control, and answer synthesis.
+
+src\agent\memory.py
+Conversation memory/session persistence layer on top of MongoDB.
+It stores chat turns, session state, summaries, and conversation ownership data.
+
+
+SRC\API
+-------
+
+src\api\__init__.py
+Package marker for the API layer.
+No runtime logic lives here.
+
+src\api\app.py
+FastAPI application factory and route definitions.
+It wires auth, rate limiting, assistant endpoints, search endpoints, metrics, health checks, and interaction logging.
+
+
+SRC\CORE
+--------
+
+src\core\__init__.py
+Package marker for shared core utilities.
+No logic by itself.
+
+src\core\audit.py
+Writes audit log records for API requests and operational events.
+Used for observability and traceability of requests.
+
+src\core\auth.py
+JWT decode/validation helpers for API auth mode.
+It handles token parsing and scope checks used by the API layer.
+
+src\core\db.py
+Database setup helpers, especially index creation.
+This is used to prepare Mongo collections so search and assistant features work correctly.
+
+src\core\freshness.py
+Freshness/date logic for operational ranking and stale-item handling.
+It normalizes timestamp behavior so ranking and cleanup use the same rules.
+
+src\core\interaction_store.py
+Stores user interaction events like views, clicks, saves, and purchases.
+These events feed collaborative filtering and behavior analytics.
+
+src\core\llm_query_parser.py
+Query parser that uses Groq when available and falls back to deterministic parsing otherwise.
+It converts natural-language search text into structured constraints like brand, rating, and budget.
+
+src\core\logging_utils.py
+Logging setup helpers used across the project.
+It centralizes logger creation and formatting.
+
+src\core\model_registry.py
+Helpers for selecting and registering active model paths.
+This lets the runtime switch between trained matcher/CF models without hardcoding each path.
+
+src\core\normalize.py
+Shared normalization utilities for text, prices, brands, ratings, stock, and query cleanup.
+It now also contains typo-tolerant search normalization used across local search and live search.
+
+src\core\query_parser.py
+Deterministic parser for extracting structured fields from user queries.
+It handles budget, brand, RAM/storage, and value-intent when LLM parsing is not used.
+
+src\core\rate_limit.py
+In-memory and Redis-backed rate limiter implementations.
+Used by the API middleware to protect endpoints from excessive request volume.
+
+src\core\relevance.py
+Relevance filters and heuristics that reject bad matches and category/listing spam.
+This is where query-vs-result sanity filtering happens before answers are shown.
+
+src\core\runtime_compat.py
+Runtime compatibility patches and safety shims.
+It includes the Windows/Python 3.12 workaround for the `multiprocess` shutdown warning.
+
+src\core\schemas.py
+Pydantic request/response schemas for API endpoints.
+These define validated payload structure for assistant and interaction calls.
+
+src\core\search_pipeline.py
+Core search pipeline that retrieves candidates, scores them, deduplicates clusters, and ranks final offers.
+This is the deterministic backbone behind `/search`, `/recommend`, and assistant product retrieval.
+
+src\core\settings.py
+Central configuration dataclass that reads from environment variables.
+Nearly every runtime component depends on this file for feature flags, keys, paths, and limits.
+
+
+SRC\MCP
+-------
+
+src\mcp\__init__.py
+Package marker for the internal tool server layer.
+No direct logic lives here.
+
+src\mcp\server.py
+Internal MCP-style tool server used by the assistant.
+It exposes tools like `search_offers`, `search_web_products`, `inspect_product_page`, `get_offer_details`, and interaction diagnostics.
+
+
+SRC\ML
+------
+
+src\ml\__init__.py
+Package marker for ML modules.
+It exists only for package structure.
+
+src\ml\cf\__init__.py
+Package marker for collaborative filtering code.
+No runtime logic by itself.
+
+src\ml\cf\infer_cf.py
+Loads the trained CF model and scores user-item pairs for personalization.
+Used at runtime when a CF model exists in the active artifact path.
+
+src\ml\cf\train_cf.py
+Training logic for the collaborative filtering model.
+It builds user/item mappings and serializes the resulting recommendation artifacts.
+
+src\ml\clustering\__init__.py
+Package marker for clustering code.
+No logic by itself.
+
+src\ml\clustering\cluster_offers.py
+Clusters offer embeddings into canonical product groups.
+This groups similar listings from different stores so search results can represent products instead of raw duplicates.
+
+src\ml\matching\__init__.py
+Package marker for the matcher module.
+No standalone behavior here.
+
+src\ml\matching\evaluate.py
+Evaluation utilities for the product matcher.
+Used to score matcher quality on holdout or labeled datasets.
+
+src\ml\matching\infer.py
+Runtime inference wrapper for the sentence-transformer matcher.
+It converts text into embeddings and similarity scores used by search and clustering.
+
+src\ml\matching\train.py
+Training/fine-tuning code for the product matcher.
+This is used when you want to rebuild the semantic matching model from labeled pairs.
+
+src\ml\ranking\__init__.py
+Package marker for ranking logic.
+No direct runtime behavior here.
+
+src\ml\ranking\rerank.py
+Ranking formulas for value-aware search ordering.
+It blends semantic match, price, rating, freshness, and source factors into final result scores.
+
+
+SRC\SCRAPERS
+------------
+
+src\scrapers\__init__.py
+Package marker for scraper implementations.
+No scraping logic in this file.
+
+src\scrapers\daraz\__init__.py
+Package marker for Daraz scraper code.
+No logic by itself.
+
+src\scrapers\daraz\playwright_async.py
+Async Playwright scraper for Daraz categories and listing pages.
+This collects raw product data from Daraz into Mongo for later processing.
+
+src\scrapers\ishopping\__init__.py
+Package marker for iShopping scrapers.
+No logic by itself.
+
+src\scrapers\ishopping\playwright_sync.py
+Synchronous Playwright scraper for iShopping.
+It is the browser-driven path used when JS-rendered content needs full page interaction.
+
+src\scrapers\ishopping\requests_bs4.py
+Requests + BeautifulSoup scraper for iShopping.
+This is a lighter fallback path but may be blocked by the site in some conditions.
+
+src\scrapers\shophive\__init__.py
+Package marker for Shophive scraper code.
+No standalone logic here.
+
+src\scrapers\shophive\playwright_async.py
+Async Playwright scraper for Shophive.
+It pulls raw listing data for downstream normalization and ranking.
+
+
+SRC\UI
+------
+
+src\ui\__init__.py
+Package marker for UI helpers.
+No direct behavior here.
+
+src\ui\gradio_app.py
+Gradio-based backend UI implementation.
+Useful for quick local testing of the search pipeline without the React frontend.
+
+
+JOBS (PYTHON AND DELIVERY SCRIPTS)
+----------------------------------
+
+jobs\bootstrap_interactions.py
+Creates synthetic interaction data for cold-start personalization experiments.
+Useful when real traffic does not exist yet but CF development still needs sample behavior.
+
+jobs\build_dataset.py
+Builds training/evaluation datasets from stored offers and labels.
+This is part of the ML preparation workflow.
+
+jobs\build_match_candidates.py
+Generates candidate product pairs for matcher labeling.
+It reduces the pair search space before manual or auto labeling.
+
+jobs\build_positive_review_queue.py
+Builds a focused review queue for likely-positive product matches.
+Used to speed up manual labeling work.
+
+jobs\cleanup_stale_offers.py
+Marks or removes stale offers based on last-seen/freshness rules.
+This keeps search results from being polluted by old dead listings.
+
+jobs\create_client_delivery.ps1
+Builds a clean ZIP package for client handoff.
+It excludes `.env`, caches, and local-only folders and can optionally skip artifacts.
+
+jobs\data_quality_report.py
+Reports freshness, counts, and data consistency metrics for stored offers.
+Useful when checking scraper health and ingestion quality.
+
+jobs\evaluate_cf.py
+Runs evaluation metrics for the collaborative filtering model.
+Used to check recommendation quality after training.
+
+jobs\evaluate_matcher.py
+Runs evaluation for the product matcher.
+Useful for validating semantic matching quality after retraining.
+
+jobs\ingest_real_interactions.py
+Imports real user interaction events from CSV/JSON/JSONL into Mongo.
+This is the bridge from real product usage to CF training data.
+
+jobs\ingest_sources.py
+Copies enabled source collections into the unified raw offers collection.
+This is the first processing step after scraping.
+
+jobs\init_db.py
+Initializes Mongo indexes and required collection setup.
+Run this before first use if the DB is empty or newly created.
+
+jobs\label_pairs.py
+Applies labels to product-match candidate pairs.
+This supports the supervised matcher training workflow.
+
+jobs\mark_synthetic_interactions.py
+Marks existing interaction rows as synthetic or real for training policy separation.
+Useful when cleaning up older mixed datasets.
+
+jobs\normalize_offers.py
+Transforms raw scraped source records into normalized, search-ready offer documents.
+This is one of the most important database-population steps.
+
+jobs\prepare_matcher_dataset.py
+Prepares matcher training files from labeled product pairs.
+It formats data into the structure expected by the sentence-transformer training pipeline.
+
+jobs\recluster_offers.py
+Re-runs product clustering on normalized offers.
+Used after normalization so grouped/canonical product structure stays current.
+
+jobs\register_model.py
+Registers a model as active in the model registry.
+This lets the runtime know which matcher or CF artifact should be used by default.
+
+jobs\report_interactions.py
+Reports real-vs-synthetic interaction stats and dataset health.
+Useful before training CF on a given interaction corpus.
+
+jobs\report_matcher_holdout.py
+Prints holdout metrics for the matcher.
+Useful for tracking model quality over time.
+
+jobs\retrain_policy.py
+Contains logic/rules for when retraining should happen.
+This supports scheduled or policy-based model refresh workflows.
+
+jobs\rollback_model.py
+Rolls the active model selection back to an older registered artifact.
+Useful if a newly trained model performs worse and needs to be reverted quickly.
+
+jobs\run_data_processing.py
+Convenience runner for the full data processing chain.
+It orchestrates ingest, normalize, stale cleanup, and reclustering in one command.
+
+jobs\run_pipeline.py
+High-level orchestration entry point for multi-stage processing/training flows.
+This is the closest thing to a pipeline wrapper for the whole project lifecycle.
+
+jobs\run_retrain_scheduler.py
+Scheduler entry point for periodic retraining checks.
+Useful if you want model retraining to happen automatically on a cadence.
+
+jobs\run_scrapers.py
+Scraper runner that executes configured scrapers.
+This is the correctly spelled runner entry point.
+
+jobs\run_scrapper.py
+Compatibility/alternate scraper runner entry point used across the repo docs.
+This is the command most often used to run one scrape cycle.
+
+jobs\run_training.py
+High-level training orchestrator for matcher and CF training/evaluation.
+Use this when you want one command to refresh the project models.
+
+jobs\smoke_assistant_api.py
+Quick smoke test for the assistant API and auth path.
+Useful after startup or before client handoff to verify the service is alive.
+
+jobs\train_cf.py
+Wrapper/training entry point for collaborative filtering.
+Used when you only want to train the personalization model.
+
+jobs\train_matcher.py
+Wrapper/training entry point for the semantic product matcher.
+Used when you only want to retrain the sentence-transformer matcher.
+
+jobs\train_matcher_holdout.py
+Runs matcher training with a holdout evaluation flow.
+Useful when you want a training run that also produces validation metrics.
+
+
+TEST FILES
+----------
+
+tests\test_api_app.py
+API-level tests for auth, assistant endpoints, and health reporting.
+These verify the HTTP surface instead of just helper functions.
+
+tests\test_assistant_hardening.py
+Regression tests for the assistant’s routing, follow-up grounding, compare/refine behavior, and context handling.
+This is the most important test file for chat behavior correctness.
+
+tests\test_cf.py
+Tests for collaborative filtering helpers and scoring behavior.
+Used to keep recommendation logic stable.
+
+tests\test_freshness.py
+Tests for freshness-date handling and operational timestamp rules.
+Protects cleanup and ranking logic from date regressions.
+
+tests\test_mcp_inspect.py
+Tests for product page inspection and listing-page detection.
+Verifies that live page extraction does not mistake category pages for product detail pages.
+
+tests\test_mcp_search.py
+Tests for MCP search tool behavior, including typo-tolerant normalization.
+Keeps the internal tool layer aligned with assistant expectations.
+
+tests\test_normalize.py
+Tests for shared normalization and query cleanup utilities.
+This covers basic text, price, brand, and typo normalization behavior.
+
+tests\test_rate_limit.py
+Tests for rate limiter behavior.
+Ensures request throttling does what the API expects.
+
+tests\test_relevance.py
+Tests for result filtering and relevance heuristics.
+This protects against bad category pages or irrelevant product classes leaking into results.
+
+
+REACT FRONTEND FILES
+--------------------
+
+react UI\.dockerignore
+Frontend Docker ignore rules.
+Prevents unnecessary local files from entering the frontend image build.
+
+react UI\.env
+Local frontend env file for Vite.
+Usually contains client-side values like `VITE_API_BASE_URL` or `VITE_SERVICE_API_KEY`.
+
+react UI\.env.example
+Template env file for frontend-only setup.
+Use this when the frontend is run separately from the backend.
+
+react UI\App.tsx
+Top-level React application shell and route registration.
+It wires the main pages and shared UI wrappers like theme and toasts.
+
+react UI\Dockerfile
+Docker build file for the frontend static site.
+Builds the Vite app and serves it with Nginx.
+
+react UI\eslint.config.js
+Lint configuration for the React/TypeScript frontend.
+Controls code quality checks on frontend source files.
+
+react UI\index.html
+HTML entry point for the Vite app.
+It loads the React bundle into the browser.
+
+react UI\index.tsx
+React bootstrap file that mounts the app into the DOM.
+It also includes the console/error forwarding behavior used in preview/debug contexts.
+
+react UI\nginx.conf
+Nginx configuration for serving the built frontend in Docker.
+Useful for SPA routing and proxy/static behavior.
+
+react UI\package-lock.json
+Exact frontend dependency lockfile.
+Ensures reproducible installs for the React app.
+
+react UI\package.json
+Frontend package manifest with scripts like `dev`, `build`, `lint`, and `preview`.
+Defines the React/Vite dependency set.
+
+react UI\postcss.config.cjs
+PostCSS setup for Tailwind and CSS processing.
+Used during frontend builds.
+
+react UI\styles.css
+Global frontend CSS entry file.
+Contains shared styling and theme-level rules.
+
+react UI\tailwind.config.cjs
+Tailwind CSS configuration.
+Controls theme tokens, content scanning, and utility generation.
+
+react UI\tsconfig.app.json
+TypeScript config for app/browser code.
+Used by Vite and editor tooling.
+
+react UI\tsconfig.json
+Base TypeScript config for the frontend project.
+Aggregates the app/node config structure.
+
+react UI\tsconfig.node.json
+TypeScript config for tooling files like Vite config.
+Separates Node-oriented TS behavior from browser code.
+
+react UI\vite-env.d.ts
+Type declarations for Vite-specific env variables and modules.
+Used so TypeScript understands `import.meta.env`.
+
+react UI\vite.config.ts
+Vite configuration for dev server, build rules, and API proxying.
+This is the frontend runtime bridge to the backend during local development.
+
+react UI\public\robots.txt
+Static robots file served by the frontend.
+Mainly for crawler instructions in deployed web environments.
+
+react UI\src\components\ChatInput.tsx
+Chat input box with submit behavior.
+This is where the user types assistant queries.
+
+react UI\src\components\Footer.tsx
+Footer component used on informational pages or older layout sections.
+Provides static product/legal style footer content.
+
+react UI\src\components\Header.tsx
+Top navigation/header component.
+Holds app branding and main navigation links.
+
+react UI\src\components\MessageBubble.tsx
+Renders user and assistant messages in chat format.
+Also surfaces assistant context like mode, summary, and decision reason.
+
+react UI\src\components\ProductCard.tsx
+Card UI for a single product result.
+Displays name, price, source, rating, and action link.
+
+react UI\src\components\ProductPanel.tsx
+Scrollable side panel for result lists and active context.
+It shows result filters and the current assistant reasoning context.
+
+react UI\src\components\QuickPrompts.tsx
+Starter prompt suggestions shown near the input area.
+Helps first-time users ask useful queries quickly.
+
+react UI\src\components\ToolTrace.tsx
+Expandable UI for assistant work-log/tool-step visibility.
+This is the secondary debug/work log surface rather than the main reasoning summary.
+
+react UI\src\components\TypingIndicator.tsx
+Animated “assistant is working” indicator.
+Displayed while the chat request is in progress.
+
+react UI\src\data\mockResponses.ts
+Mock/sample response data for frontend development.
+Useful when building UI states without a live backend.
+
+react UI\src\lib\api.ts
+Frontend API client for assistant/history/delete calls.
+This file is the main browser-side bridge to the backend endpoints.
+
+react UI\src\lib\sessionStore.ts
+Browser local-storage helper for recent sessions and generated user IDs.
+This is how the frontend keeps a stable client-side conversation identity.
+
+react UI\src\pages\About.tsx
+Informational About page.
+Provides non-chat description content for the app.
+
+react UI\src\pages\History.tsx
+Conversation history page.
+Shows prior sessions stored in local browser state and/or restored from backend context.
+
+react UI\src\pages\Home.tsx
+Main chat/search experience page.
+It coordinates the message list, product panel, context restoration, and assistant calls.
+
+react UI\src\pages\NotFound.tsx
+404-style fallback page.
+Displayed when the user visits an unknown route.
+
+react UI\src\types\api.ts
+TypeScript types for backend API requests/responses.
+Keeps the frontend aligned with assistant payload structure.
+
+react UI\src\types\chat.ts
+Frontend chat-specific types for messages, traces, and product cards.
+Used by UI components to keep message rendering strongly typed.
+
+
+ARTIFACTS AND DATA (HIGH LEVEL)
+-------------------------------
+
+artifacts\
+Stores trained model outputs, matcher datasets, labeling files, registry state, and scraper debug files.
+Important subfolders include `matching_model`, `cf_model`, `matcher_data`, `labeling`, and `scraper_debug`.
+
+data\
+Project data folder for labels, imports, and other structured assets used by jobs.
+This is more of a working-data area than source code.
+
+
+RECOMMENDED OPERATIONAL FLOWS
+-----------------------------
+
+Local run after scraping:
+1. Copy-Item .env.example .env
+2. $env:PYTHONPATH = (Get-Location).Path
+3. python jobs\init_db.py
+4. python jobs\run_scrapper.py --once
+5. python jobs\run_data_processing.py --with-init-db
+6. python run_all.py
+
+Full model refresh:
+1. $env:PYTHONPATH = (Get-Location).Path
+2. python jobs\run_training.py
+
+Docker run:
+1. Copy-Item .env.example .env
+2. Fill API keys
+3. docker compose up --build -d
+

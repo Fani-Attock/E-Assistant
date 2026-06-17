@@ -1,0 +1,38 @@
+sources:
+  - name: daraz_playwright
+    site: daraz.pk
+    type: playwright_async
+    script: src/scrapers/daraz/playwright_async.py
+    source_db: Daraz_Data
+    source_collection: products
+    enabled: true
+  - name: ishopping_requests
+    site: ishopping.pk
+    type: requests_bs4
+    script: src/scrapers/ishopping/requests_bs4.py
+    source_db: iShopping_Data
+    source_collection: products
+    enabled: true
+  - name: ishopping_playwright
+    site: ishopping.pk
+    type: playwright_sync
+    script: src/scrapers/ishopping/playwright_sync.py
+    source_db: FYP_Products
+    source_collection: products
+    enabled: true
+  - name: shophive_playwright
+    site: shophive.com
+    type: playwright_async
+    script: src/scrapers/shophive/playwright_async.py
+    source_db: test
+    source_collection: shophiveProducts
+    enabled: true
+
+pipeline:
+  mongo_uri: mongodb://localhost:27017/
+  db_name: product_search
+  collection_name: normalized_products
+
+ml:
+  matching_model: sentence-transformers/all-MiniLM-L6-v2
+  clustering: agglomerative

@@ -1,0 +1,45 @@
+{
+  "source": "mongo",
+  "seed": 42,
+  "val_ratio": 0.2,
+  "split_mode": "time_based",
+  "cross_source_val_only": true,
+  "split_stats": {
+    "mode": "time_based",
+    "cross_source_val_only": true,
+    "labels": {
+      "0": {
+        "total": 300,
+        "train": 240,
+        "val": 60,
+        "val_target": 60,
+        "val_cross_source": 60
+      },
+      "1": {
+        "total": 62,
+        "train": 50,
+        "val": 12,
+        "val_target": 12,
+        "val_cross_source": 12
+      }
+    }
+  },
+  "counts": {
+    "all": 362,
+    "train": 290,
+    "val": 72,
+    "all_pos": 62,
+    "all_neg": 300,
+    "train_pos": 50,
+    "train_neg": 240,
+    "val_pos": 12,
+    "val_neg": 60,
+    "val_cross_source": 72,
+    "val_same_source": 0
+  },
+  "files": {
+    "all": "artifacts\\matcher_data\\labeled_all.jsonl",
+    "train": "artifacts\\matcher_data\\train.jsonl",
+    "val": "artifacts\\matcher_data\\val.jsonl"
+  }
+}

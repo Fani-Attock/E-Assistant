@@ -1,0 +1,10 @@
+{
+  "text_dim": 64,
+  "numeric_dim": 12,
+  "hidden_dim": 128,
+  "epochs": 20,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "training_rows": 918,
+  "final_loss": 1.0
+}

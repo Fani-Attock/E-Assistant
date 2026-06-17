@@ -1,0 +1,18 @@
+.git
+.gitignore
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.log
+.DS_Store
+
+.venv
+venv
+env
+
+react UI/node_modules
+react UI/dist
+
+UI.zip
